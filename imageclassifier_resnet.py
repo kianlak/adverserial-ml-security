@@ -10,7 +10,7 @@ Original file is located at
 Data Source: https://advnet.seas.upenn.edu/#:~:text=AdvNet%20is%20a%20dataset%20of,without%20any%20stickers%20on%20them
 """
 
-!pip install gdown
+# !pip install gdown
 
 import gdown
 
@@ -158,7 +158,7 @@ plt.show()
 
 """# 6. Load Dataset Using PyTorch's ImageFolder"""
 
-!pip install torchvision
+# !pip install torchvision
 
 import torch
 from torchvision import datasets, transforms
@@ -273,7 +273,7 @@ print("Model saved.")
 
 """## 13. Adversarial Attack"""
 
-!pip install torchattacks
+# !pip install torchattacks
 
 """# 14. Compare the original image with FGSM one"""
 
