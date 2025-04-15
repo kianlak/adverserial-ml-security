@@ -21,9 +21,8 @@ gdown.download(url, quiet=False)
 import zipfile
 import os
 
-#CHANGE THIS
 zip_path = "C:/Users/himsi/source/repos/PythonTester/LisaCnn.zip"  # Update with the correct path on your local machine
-#CHANGE THIS
+
 extract_dir = "C:/Users/himsi/source/repos/PythonTester/LisaCnn"  # Correct extraction directory for local machine
 
 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
@@ -459,15 +458,20 @@ def show_defence_example(original, fgsm, bit_reduced_list, binary_filtered_list,
     plt.show()
 
 # Your defense logic should follow as normal
+bit_reduced_images = [bit_depth_reduction(adv_images, b) for b in bit_levels]
+binary_filtered_images = [binary_filter(adv_images, t) for t in thresholds]
+
+# Call the function with images
+show_defence_example(images, adv_images, bit_reduced_images, binary_filtered_images, bit_levels, thresholds)
+
+
+"""17. Evaluation of PGD Attack with Bit-Depth Reduction and Binary Filter Defenses"""
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
-import random
-from PIL import Image
 
-# Define the FGSM attack function (Fast Gradient Sign Method)
+# FGSM attack function
 def fgsm_attack(model, image, label, epsilon):
-    model.train()  # Ensure model is in train mode for gradients during attack
     image = image.clone().detach().requires_grad_(True)  # Ensure image retains gradients
     output = model(image)
     loss = F.cross_entropy(output, label)
@@ -479,52 +483,51 @@ def fgsm_attack(model, image, label, epsilon):
     adv_image = torch.clamp(adv_image, 0, 1)  # Clamp to [0, 1]
     return adv_image.detach()
 
-# PGD Attack Function (Projected Gradient Descent)
+# PGD attack function
 def pgd_attack(model, image, label, epsilon, alpha, iterations):
-    model.train()  # Ensure model is in train mode for gradients during attack
-    
-    image_adv = image.clone().detach().requires_grad_(True)  # Ensure image requires gradients
+    image_adv = image.clone().detach().requires_grad_(True) 
     original_image = image.clone().detach()
 
     for _ in range(iterations):
-        output = model(image_adv)  # Forward pass
-        loss = F.cross_entropy(output, label)  # Compute loss
+        output = model(image_adv)
+        loss = F.cross_entropy(output, label)
         model.zero_grad()  # Zero out the gradients before the backward pass
-        loss.backward()  # Compute gradients for backpropagation
+        loss.backward()
 
         if image_adv.grad is None:
+            print("Gradients are None!")  # Debug
             break
 
         # Gradient update
         with torch.no_grad():
             image_adv = image_adv + alpha * image_adv.grad.sign()
             image_adv = torch.min(torch.max(image_adv, original_image - epsilon), original_image + epsilon)
-            image_adv = torch.clamp(image_adv, 0, 1)  # Ensure image is within valid pixel range
+            image_adv = torch.clamp(image_adv, 0, 1)  # image is within valid pixel range
 
     return image_adv.detach()
 
 # PGD Attack Parameters
-epsilon = 8 / 255  # Increased perturbation magnitude
-alpha = 2 / 255     # Increased step size for PGD attack
-iterations = 7      # Number of iterations for PGD attack
+epsilon = 8 / 255  # Perturbation magnitude
+alpha = 2 / 255     # Step size for PGD attack
+iterations = 7      # Number of iterations
 
-# Example: Get one image and label from your validation set
+#example
 images, labels = next(iter(val_loader))
 image = images[1].unsqueeze(0).clone().detach().to(device)
 label = labels[1].unsqueeze(0).clone().detach().to(device)
 
 # Compute FGSM adversarial images
-adv_image_fgsm = fgsm_attack(model, image, label, epsilon)  # Ensure FGSM is computed here
+adv_image_fgsm = fgsm_attack(model, image, label, epsilon)  # Making sure this is computed
 
 # Compute PGD adversarial images
 adv_image_pgd = pgd_attack(model, image, label, epsilon, alpha, iterations)  # PGD computation
 
 # Get predictions for original image, FGSM, and PGD adversarial image
-model.eval()  # Set model to evaluation mode for inference
+model.eval()
 with torch.no_grad():
     pred_clean = model(image).argmax(dim=1).item()
     pred_fgsm = model(adv_image_fgsm).argmax(dim=1).item()  # Use adv_image_fgsm
-    pred_pgd = model(adv_image_pgd).argmax(dim=1).item()  # Use adv_image_pgd
+    pred_pgd = model(adv_image_pgd).argmax(dim=1).item()
 
 # Visualize the original, FGSM, and PGD adversarial images
 image_vis = image.squeeze().detach().cpu()
@@ -608,7 +611,7 @@ for images, labels in val_loader:
     correct_pgd += (preds_pgd == labels).sum().item()
     total += labels.size(0)
 
-# Final accuracy printout
+# Final accuracy 
 val_acc_clean = 100 * correct_clean / total
 val_acc_fgsm = 100 * correct_fgsm / total
 val_acc_pgd = 100 * correct_pgd / total
