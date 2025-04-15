@@ -14,7 +14,7 @@ Use the appropriate command based on your operating system:
 - Windows (Command Prompt):
   devenv\Scripts\activate.bat
 
-- Windows (PowerShell):
+- Windows (PowerShell with Scripts enabled):
   .\devenv\Scripts\Activate.ps1
 
 - macOS / Linux:
