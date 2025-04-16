@@ -1,15 +1,12 @@
 import requests
+from client_utility import handle_command
 
 url = 'http://localhost:5000/run'
 
 print("Type your command (Type 'exit' to quit):")
 
-def command_processing():
-  processed_command = input(">> ").strip().lower()
-  return processed_command
-
 while True:
-  command = command_processing()
+  command = handle_command()
 
   if command == 'exit':
     print("Exiting...")

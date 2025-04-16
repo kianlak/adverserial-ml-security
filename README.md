@@ -7,6 +7,13 @@
 ⚠️ Important: You will need **two terminal windows** — one for the **server** and one for the **client**.  
 Activate the virtual environment in **both** terminals.
 
+## Dependencies and Requirements
+
+Make sure to run:
+
+- To make sure you have all project dependencies:
+  pip install -r requirements.txt
+
 ### Activate Virtual Environment
 
 Use the appropriate command based on your operating system:
