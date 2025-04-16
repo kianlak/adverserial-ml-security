@@ -21,6 +21,6 @@ while True:
     if response.ok:
       print(f"[Server]: {response.json().get('response')}")
     else:
-      print(response.text)
+      print(f"[ERROR]: {response.json().get('response')}")
   except requests.exceptions.RequestException as e:
     print("Connection failure:", e)
