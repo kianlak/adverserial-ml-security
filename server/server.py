@@ -1,17 +1,39 @@
 from flask import Flask, request, jsonify
 from server_utility import commands
+from auth import authenticate, is_authorized
+
 app = Flask(__name__)
+
+@app.route('/login', methods=['POST'])
+def login():
+	data = request.json
+	username = data.get('username', '')
+	password = data.get('password', '')
+
+	success, message = authenticate(username, password)
+
+	if not success:
+		return jsonify({'response': message}), 403
+	
+	return jsonify({'response': f"Access Granted"})
 
 @app.route('/run', methods=['POST'])
 def handle_command():
 	data = request.json
 	command = data.get('command', '')
+	user = data.get('user', '')
 	
 	print(f"[+] Received command: {command}")
-	
+
 	if command in commands:
 		try:
+			authorized, message = is_authorized(user, command)
+			
+			if not authorized:
+				return jsonify({'response': message}), 403
+			
 			result = commands[command]()
+			
 			return jsonify({'response': result})
 		except Exception as e:
 			return jsonify({'response': f"Error executing '{command}': {str(e)}"}), 500
