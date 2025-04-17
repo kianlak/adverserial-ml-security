@@ -9,7 +9,10 @@ Activate the virtual environment in **both** terminals.
 
 ## Dependencies and Requirements
 
-Make sure to run:
+Make sure to run (in the root directory):
+
+- To make sure you have the virtual environment ready:
+  python -m venv venv
 
 - To make sure you have all project dependencies:
   pip install -r requirements.txt
