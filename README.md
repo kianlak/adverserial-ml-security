@@ -22,13 +22,13 @@ Make sure to run (in the root directory):
 Use the appropriate command based on your operating system:
 
 - Windows (Command Prompt):
-  devenv\Scripts\activate.bat
+  venv\Scripts\activate.bat
 
 - Windows (PowerShell with Scripts enabled):
-  .\devenv\Scripts\Activate.ps1
+  .\venv\Scripts\Activate.ps1
 
 - macOS / Linux:
-  source devenv/bin/activate
+  source venv/bin/activate
 
 ---
 
@@ -52,9 +52,10 @@ In the client terminal, run:
 
 ## Notes
 
-- Ensure the virtual environment (`devenv`) is already created.
+- Ensure the virtual environment (`venv`) is already created.
 - Install dependencies with:
   pip install -r requirements.txt
 - The server must be running before starting the client.
+- Mainly tested on Windows with Python 3.10.6
 
 ---
