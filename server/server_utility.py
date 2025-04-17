@@ -1,12 +1,12 @@
 # Command handlers (Whenever we add a new command, add it into the Command registry and provide its proper function along with it)
 def cmd_help():
-  help_text = "Available commands:\n"
+  help_output = "Available commands:\n"
 
   for cmd, handler in commands.items():
-    desc = handler.__doc__ or "No description provided."
-    help_text += f" - {cmd}: {desc}\n"
+    desc = handler.__doc__ or "No description provided"
+    help_output += f" - {cmd}: {desc}\n"
 
-  return help_text.strip()
+  return help_output.strip()
 
 def cmd_hello():
   """Say hello to the server, what will it respond with???"""

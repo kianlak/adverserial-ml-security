@@ -1,5 +1,7 @@
 import requests
-from client_utility import handle_command
+import threading
+
+from client_utility import handle_command, waiting_animation
 
 url = 'http://localhost:5000/run'
 
@@ -16,7 +18,14 @@ while True:
     continue
 
   try:
-    response = requests.post(url, json={'command': command})
+    stop_event = threading.Event()
+    t = threading.Thread(target = waiting_animation, args = (stop_event, "Waiting"))
+    t.start()
+
+    response = requests.post(url, json = {'command': command})
+
+    stop_event.set()
+    t.join()
     
     if response.ok:
       print(f"[Server]: {response.json().get('response')}")
