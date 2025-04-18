@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from server_utility import commands
 from auth import authenticate, is_authorized
+from logger import insert_log
 
 app = Flask(__name__)
 
@@ -30,10 +31,13 @@ def handle_command():
 			authorized, message = is_authorized(user, command)
 			
 			if not authorized:
+				insert_log(user, command, 'unauthorized', message)
 				return jsonify({'response': message}), 403
 			
+
 			result = commands[command]()
-			
+			insert_log(user, command, 'authorized', message)
+
 			return jsonify({'response': result})
 		except Exception as e:
 			return jsonify({'response': f"Error executing '{command}': {str(e)}"}), 500

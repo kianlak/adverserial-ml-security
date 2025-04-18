@@ -1,11 +1,12 @@
 import json
 
 command_permissions = {
-  "hello": {"admin", "developer"},
+  "hello": {"admin", "developer", "user"},
   "help": {"admin", "developer", "user"},
+  "logs": {"admin", "developer"},
 }
 
-with open('./database/user_data.json', 'r') as f:
+with open('./database/user_data.jsonl', 'r') as f:
   data = json.load(f)
 
 def authenticate(username, password):
