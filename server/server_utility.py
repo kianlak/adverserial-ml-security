@@ -1,4 +1,5 @@
 import json
+import subprocess
 from threading import Lock
 from collections import defaultdict
 
@@ -57,9 +58,9 @@ def cmd_hello():
 def cmd_runAdvML(args=None):
     """Run AdvAttackDefence.py"""
     try:
+        args = args or []
         command = ["python", "-u", "AdvAttackDefence.py"]
-        if args: 
-            command += args
+        command += args
 
         process = subprocess.Popen(
             command,
@@ -81,8 +82,8 @@ def cmd_runAdvML(args=None):
     
 # Command registry
 commands = {
-  'help': cmd_help,
-  'hello': cmd_hello,
+  'help': lambda args=None: cmd_help(),
+  'hello': lambda args=None: cmd_hello(),
   'run_ml': lambda args=None: cmd_runAdvML(args),
-  'logs': cmd_logs
+  'logs': lambda args=None: cmd_logs()
 }

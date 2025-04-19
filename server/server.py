@@ -50,23 +50,26 @@ def handle_command():
   #               stream_with_context(result), 
   #               mimetype='text/plain'
   #           )
-	# user = data.get('user', '')
-	
-	print(f"[+] Received command: {command}")
-
+  
+	user = data.get('user', '')
+	print(f"[+] Received user: {user}")
 	if command in commands:
 		try:
+
 			authorized, message = is_authorized(user, command)
+
 			
 			if not authorized:
 				insert_log(user, command, 'unauthorized', message)
 				return jsonify({'response': message}), 403
 			
+			result = commands[command](args)
 
-			result = commands[command]()
 			insert_log(user, command, 'authorized', message)
 
-			return jsonify({'response': result})
+			return Response(
+                stream_with_context(result), 
+                mimetype='text/plain')
 		except Exception as e:
 			return Response(f"Error executing '{command}': {str(e)}", mimetype='text/plain'), 500
 	else:

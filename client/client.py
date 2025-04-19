@@ -52,7 +52,7 @@ while True:
     t = threading.Thread(target = waiting_animation, args = (stop_event, "Waiting"))
     t.start()
 
-    response = requests.post(f'{url}/run', json={'command': command, 'user': current_user})
+    response = requests.post(f'{url}/run', json = {'command': command, 'args': args, 'user': current_user}, stream=True)
 
     stop_event.set()
     t.join()
@@ -63,6 +63,10 @@ while True:
         if line:
           print(line)
     else:
-      print(f"[ERROR]: {response.text}")
+      try:
+        error_msg = response.json().get('response', response.text)
+      except ValueError:
+        error_msg = response.text
+      print(f"[ERROR]: {error_msg}")
   except requests.exceptions.RequestException as e:
     print("[FATAL ERROR]", e)
