@@ -2,3 +2,4 @@ venv/
 devenv/
 __pycache__/
 *.py[cod]
+logs.jsonl/

@@ -5,7 +5,7 @@ from collections import defaultdict
 
 # Command handlers (Whenever we add a new command, add it into the Command registry and provide its proper function along with it)
 
-def cmd_logs():
+def cmd_logs(args=None):
   """Return logs for the current user"""
   logging_file = './logs/logs.jsonl'
   file_lock = Lock()
@@ -42,7 +42,8 @@ def cmd_logs():
 
   return "\n".join(prettier_logs)
 
-def cmd_help():
+def cmd_help(args=None):
+  """Showcases useful commands"""
   help_output = "Available commands:\n"
 
   for cmd, handler in commands.items():
@@ -51,7 +52,7 @@ def cmd_help():
 
   return help_output.strip()
 
-def cmd_hello():
+def cmd_hello(args=None):
   """Say hello to the server, what will it respond with???"""
   return "*Server decided to ignore you*"
 
@@ -82,8 +83,8 @@ def cmd_runAdvML(args=None):
     
 # Command registry
 commands = {
-  'help': lambda args=None: cmd_help(),
-  'hello': lambda args=None: cmd_hello(),
-  'run_ml': lambda args=None: cmd_runAdvML(args),
-  'logs': lambda args=None: cmd_logs()
+  'help': cmd_help,
+  'hello': cmd_hello,
+  'run_ml': cmd_runAdvML,
+  'logs': cmd_logs
 }
