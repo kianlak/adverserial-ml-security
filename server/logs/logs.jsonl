@@ -27,3 +27,6 @@
 {"timestamp": "2025-04-19 15:54:39", "user": "user", "command": "help", "status": "authorized", "server_response": ""}
 {"timestamp": "2025-04-19 16:04:28", "user": "user", "command": "run_ml", "status": "authorized", "server_response": ""}
 {"timestamp": "2025-04-19 16:12:22", "user": "user", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-19 22:05:40", "user": "admin", "command": "help", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-19 22:05:53", "user": "admin", "command": "hello", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-19 22:05:59", "user": "admin", "command": "logs", "status": "authorized", "server_response": ""}
