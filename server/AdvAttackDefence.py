@@ -18,8 +18,8 @@ sys.stdout.reconfigure(line_buffering=True)
 
 parser = argparse.ArgumentParser(description="Train or Load Model with Attack and Defense Options")
 parser.add_argument("--train", action="store_true", help="Train the model from scratch")
-parser.add_argument("--attack", choices=["fgsm", "pgd", "both"], default="both", help="Select attack type")
-parser.add_argument("--defense", choices=["bitdepth", "binary", "both"], default="both", help="Select defense type")
+parser.add_argument("--attack", choices=["fgsm", "pgd", "deepfool", "both", "all"], default="both", help="Select attack type")
+parser.add_argument("--defense", choices=["bitdepth", "binary", "both", "none", "jpeg", "all"], default="both", help="Select defense type")
 args = parser.parse_args()
 
 # Initialize Attack and Defense Lists
@@ -27,16 +27,16 @@ attacks = []
 defense_opts = []
 
 if args.attack in ['all']:
-    attacks = ['fgsm', 'pgd', 'deepfool']  # Make sure DeepFool is added to the attack list
+    attacks = ['fgsm', 'pgd', 'deepfool']
 else:
-    attacks = [args.attack]
+    attacks = [args.attack] 
 
 if args.defense in ['all']:
-    defense_opts = ['vanilla', 'bitdepth', 'binary', 'jpeg']  # JPEG defense added
+    defense_opts = ['vanilla', 'bitdepth', 'binary', 'jpeg']
 elif args.defense == 'none':
     defense_opts = ['vanilla']
 else:
-    defense_opts = [args.defense]
+    defense_opts = [args.defense] 
 
 # url = f"https://drive.google.com/uc?export=download&id=13NdhIvPgzOQoRg9A-xUUXSsfxVwPrEUV"
 # output_path = "../content/LisaCnn.zip"
