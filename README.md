@@ -56,6 +56,6 @@ In the client terminal, run:
 - Install dependencies with:
   pip install -r requirements.txt
 - The server must be running before starting the client.
-- Mainly tested on Windows with Python 3.10.6
+- Mainly tested on Windows with Python 3.13.x
 
 ---
