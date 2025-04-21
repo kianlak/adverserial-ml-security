@@ -18,8 +18,8 @@ sys.stdout.reconfigure(line_buffering=True)
 
 parser = argparse.ArgumentParser(description="Train or Load Model with Attack and Defense Options")
 parser.add_argument("--train", action="store_true", help="Train the model from scratch")
-parser.add_argument("--attack", choices=["fgsm", "pgd", "deepfool", "both", "all"], default="both", help="Select attack type")
-parser.add_argument("--defense", choices=["bitdepth", "binary", "both", "none", "jpeg", "all"], default="both", help="Select defense type")
+parser.add_argument("--attack", choices=["fgsm", "pgd", "deepfool", "all"], default="all", help="Select attack type")
+parser.add_argument("--defense", choices=["bitdepth", "binary", "none", "jpeg", "all"], default="all", help="Select defense type")
 args = parser.parse_args()
 
 # Initialize Attack and Defense Lists
@@ -489,12 +489,12 @@ for images, labels in val_loader:
         _, preds_clean = torch.max(outputs_clean, 1)
 
     # Generate FGSM and PGD adversarial examples
-    if args.attack in ["fgsm", "both"]:
+    if args.attack in ["fgsm", "all"]:
         adv_images_fgsm = fgsm_attack(model, images, labels, epsilon)
         with torch.no_grad():
             outputs_fgsm = model(adv_images_fgsm)
             _, preds_fgsm = torch.max(outputs_fgsm, 1)
-        if args.defense in ["bitdepth", "both"]:
+        if args.defense in ["bitdepth", "all"]:
             # FGSM + Bit-depth reduction
             for b in bit_levels:
                 reduced_fgsm_adv_images = bit_depth_reduction(adv_images_fgsm, b)
@@ -503,7 +503,7 @@ for images, labels in val_loader:
                     outputs_bit = model(reduced_fgsm_adv_images)
                     _, preds_bit = torch.max(outputs_bit, 1)
                     bit_results_fgsm[b] += (preds_bit == labels).sum().item()
-        if args.defense in ["binary", "both"]:
+        if args.defense in ["binary", "all"]:
             # FGSM + Binary Filter
             for t in thresholds:
                 filtered_fgsm_adv_images = binary_filter(adv_images_fgsm, t)
@@ -513,13 +513,13 @@ for images, labels in val_loader:
                     _, preds_binfilter = torch.max(outputs_binfilter, 1)
                     binary_results_fgsm[t] += (preds_binfilter == labels).sum().item()
     
-    if args.attack in ["pgd", "both"]:
+    if args.attack in ["pgd", "all"]:
         adv_images_pgd = pgd_attack(model, images, labels, epsilon, alpha, iterations)
         # PGD prediction
         with torch.no_grad():
             outputs_pgd = model(adv_images_pgd)
             _, preds_pgd = torch.max(outputs_pgd, 1)
-        if args.defense in ["bitdepth", "both"]:
+        if args.defense in ["bitdepth", "all"]:
             # PGD + Bit-depth reduction
             for b in bit_levels:
                 reduced_pgd_adv_images = bit_depth_reduction(adv_images_pgd, b)
@@ -528,7 +528,7 @@ for images, labels in val_loader:
                     outputs_bit = model(reduced_pgd_adv_images)
                     _, preds_bit = torch.max(outputs_bit, 1)
                     bit_results_pgd[b] += (preds_bit == labels).sum().item()
-        if args.defense in ["binary", "both"]:
+        if args.defense in ["binary", "all"]:
             # PGD + Binary Filter
             for t in thresholds:
                 filtered_pgd_adv_images = binary_filter(adv_images_pgd, t)
@@ -538,12 +538,12 @@ for images, labels in val_loader:
                     _, preds_binfilter = torch.max(outputs_binfilter, 1)
                     binary_results_pgd[t] += (preds_binfilter == labels).sum().item()
 
-    if args.attack in ["deepfool", "both"]:
+    if args.attack in ["deepfool", "all"]:
         adv_images_deepfool = deepfool_attack(model, images, labels)
         with torch.no_grad():
             outputs_deepfool = model(adv_images_deepfool)
             _, preds_deepfool = torch.max(outputs_deepfool, 1)
-        if args.defense in ["bitdepth", "both"]:
+        if args.defense in ["bitdepth", "all"]:
             # DeepFool + Bit-depth reduction
             for b in bit_levels:
                 reduced_deepfool_adv_images = bit_depth_reduction(adv_images_deepfool, b)
@@ -552,7 +552,7 @@ for images, labels in val_loader:
                     outputs_bit = model(reduced_deepfool_adv_images)
                     _, preds_bit = torch.max(outputs_bit, 1)
                     bit_results_deepfool[b] += (preds_bit == labels).sum().item()
-        if args.defense in ["binary", "both"]:
+        if args.defense in ["binary", "all"]:
             # DeepFool + Binary Filter
             for t in thresholds:
                 filtered_deepfool_adv_images = binary_filter(adv_images_deepfool, t)
@@ -566,49 +566,49 @@ for images, labels in val_loader:
     total += labels.size(0)
     correct_clean += (preds_clean == labels).sum().item()
     val_acc_clean = 100 * correct_clean / total
-    if args.attack in ["fgsm", "both"]:
+    if args.attack in ["fgsm", "all"]:
         correct_fgsm += (preds_fgsm == labels).sum().item()
         val_acc_fgsm = 100 * correct_fgsm / total
 
-    if args.attack in ["pgd", "both"]:
+    if args.attack in ["pgd", "all"]:
         correct_pgd += (preds_pgd == labels).sum().item()
         val_acc_pgd = 100 * correct_pgd / total
 
-    if args.attack in ["deepfool", "both"]:
+    if args.attack in ["deepfool", "all"]:
         correct_deepfool += (preds_deepfool == labels).sum().item()
         val_acc_deepfool = 100 * correct_deepfool / total
 
 print(f"Clean Accuracy on full val set: {val_acc_clean:.2f}%")
 
-if args.attack in ["fgsm", "both"]:
+if args.attack in ["fgsm", "all"]:
     print(f"FGSM Accuracy on full val set : {val_acc_fgsm:.2f}%")
-    if args.defense in ["bitdepth", "both"]:
+    if args.defense in ["bitdepth", "all"]:
         for b in bit_levels:
             bit_fgsm_acc = 100 * bit_results_fgsm[b] / total
             print(f"FGSM + Bit-Depth Reduction (bits={b}) : {bit_fgsm_acc:.2f}%")
-    if args.defense in ["binary", "both"]:
+    if args.defense in ["binary", "all"]:
         for t in thresholds:
             binary_fgsm_acc = 100 * binary_results_fgsm[t] / total
             print(f"FGSM + Binary Filter (threshold={t}) : {binary_fgsm_acc:.2f}%")
 
-if args.attack in ["pgd", "both"]:
+if args.attack in ["pgd", "all"]:
     print(f"PGD Accuracy on full val set  : {val_acc_pgd:.2f}%")
-    if args.defense in ["bitdepth", "both"]:
+    if args.defense in ["bitdepth", "all"]:
         for b in bit_levels:
             bit_pgd_acc = 100 * bit_results_pgd[b] / total
             print(f"PGD + Bit-Depth Reduction (bits={b}) : {bit_pgd_acc:.2f}%")
-    if args.defense in ["binary", "both"]:
+    if args.defense in ["binary", "all"]:
         for t in thresholds:
             binary_pgd_acc = 100 * binary_results_pgd[t] / total
             print(f"PGD + Binary Filter (threshold={t}) : {binary_pgd_acc:.2f}%")
 
-if args.attack in ["deepfool", "both"]:
+if args.attack in ["deepfool", "all"]:
     print(f"DeepFool Accuracy on full val set  : {val_acc_deepfool:.2f}%")
-    if args.defense in ["bitdepth", "both"]:
+    if args.defense in ["bitdepth", "all"]:
         for b in bit_levels:
             bit_deepfool_acc = 100 * bit_results_deepfool[b] / total
             print(f"DeepFool + Bit-Depth Reduction (bits={b}) : {bit_deepfool_acc:.2f}%")
-    if args.defense in ["binary", "both"]:
+    if args.defense in ["binary", "all"]:
         for t in thresholds:
             binary_deepfool_acc = 100 * binary_results_deepfool[t] / total
             print(f"DeepFool + Binary Filter (threshold={t}) : {binary_deepfool_acc:.2f}%")
@@ -620,17 +620,17 @@ import matplotlib.pyplot as plt
 
 def show_defence_example(original, fgsm, pgd, deepfool, bit_reduced_list_fgsm, binary_filtered_list_fgsm, bit_reduced_list_pgd, binary_filtered_list_pgd, bit_reduced_list_deepfool, binary_filtered_list_deepfool, bit_levels, thresholds, index=0):
     total_cols = 1
-    if args.defense in ["bitdepth", "both"]:
+    if args.defense in ["bitdepth", "all"]:
         total_cols += len(bit_levels)
-    if args.defense in ["binary", "both"]:
+    if args.defense in ["binary", "all"]:
         total_cols += len(thresholds)
 
     rows = 1
-    if args.attack in ["fgsm", "both"]:
+    if args.attack in ["fgsm", "all"]:
         rows += 1
-    if args.attack in ["pgd", "both"]:
+    if args.attack in ["pgd", "all"]:
         rows += 1
-    if args.attack in ["deepfool", "both"]:  # Include DeepFool in the visualization
+    if args.attack in ["deepfool", "all"]:  # Include DeepFool in the visualization
         rows += 1
 
     plt.figure(figsize=(3 * total_cols, 3 * rows))
@@ -643,14 +643,14 @@ def show_defence_example(original, fgsm, pgd, deepfool, bit_reduced_list_fgsm, b
 
     plot_pos = total_cols + 1
 
-    if args.attack in ["fgsm", "both"]:
+    if args.attack in ["fgsm", "all"]:
         plt.subplot(rows, total_cols, plot_pos)
         plt.imshow(fgsm[index].permute(1, 2, 0).cpu().numpy())
         plt.title("FGSM Adv")
         plt.axis("off")
         plot_pos += 1
 
-        if args.defense in ["bitdepth", "both"]:
+        if args.defense in ["bitdepth", "all"]:
             for i, img in enumerate(bit_reduced_list_fgsm):
                 plt.subplot(rows, total_cols, plot_pos)
                 plt.imshow(img[index].permute(1, 2, 0).cpu().numpy())
@@ -658,7 +658,7 @@ def show_defence_example(original, fgsm, pgd, deepfool, bit_reduced_list_fgsm, b
                 plt.axis("off")
                 plot_pos += 1
 
-        if args.defense in ["binary", "both"]:
+        if args.defense in ["binary", "all"]:
             for i, img in enumerate(binary_filtered_list_fgsm):
                 plt.subplot(rows, total_cols, plot_pos)
                 plt.imshow(img[index].permute(1, 2, 0).cpu().numpy())
@@ -666,14 +666,14 @@ def show_defence_example(original, fgsm, pgd, deepfool, bit_reduced_list_fgsm, b
                 plt.axis("off")
                 plot_pos += 1
 
-    if args.attack in ["pgd", "both"]:
+    if args.attack in ["pgd", "all"]:
         plt.subplot(rows, total_cols, plot_pos)
         plt.imshow(pgd[index].permute(1, 2, 0).cpu().numpy())
         plt.title("PGD Adv")
         plt.axis("off")
         plot_pos += 1
 
-        if args.defense in ["bitdepth", "both"]:
+        if args.defense in ["bitdepth", "all"]:
             for i, img in enumerate(bit_reduced_list_pgd):
                 plt.subplot(rows, total_cols, plot_pos)
                 plt.imshow(img[index].permute(1, 2, 0).cpu().numpy())
@@ -681,7 +681,7 @@ def show_defence_example(original, fgsm, pgd, deepfool, bit_reduced_list_fgsm, b
                 plt.axis("off")
                 plot_pos += 1
 
-        if args.defense in ["binary", "both"]:
+        if args.defense in ["binary", "all"]:
             for i, img in enumerate(binary_filtered_list_pgd):
                 plt.subplot(rows, total_cols, plot_pos)
                 plt.imshow(img[index].permute(1, 2, 0).cpu().numpy())
@@ -689,14 +689,14 @@ def show_defence_example(original, fgsm, pgd, deepfool, bit_reduced_list_fgsm, b
                 plt.axis("off")
                 plot_pos += 1
 
-    if args.attack in ["deepfool", "both"]:  # Show DeepFool adversarial examples
+    if args.attack in ["deepfool", "all"]:  # Show DeepFool adversarial examples
         plt.subplot(rows, total_cols, plot_pos)
         plt.imshow(deepfool[index].permute(1, 2, 0).cpu().numpy())
         plt.title("DeepFool Adv")
         plt.axis("off")
         plot_pos += 1
 
-        if args.defense in ["bitdepth", "both"]:
+        if args.defense in ["bitdepth", "all"]:
             for i, img in enumerate(bit_reduced_list_deepfool):
                 plt.subplot(rows, total_cols, plot_pos)
                 plt.imshow(img[index].permute(1, 2, 0).cpu().numpy())
@@ -704,7 +704,7 @@ def show_defence_example(original, fgsm, pgd, deepfool, bit_reduced_list_fgsm, b
                 plt.axis("off")
                 plot_pos += 1
 
-        if args.defense in ["binary", "both"]:
+        if args.defense in ["binary", "all"]:
             for i, img in enumerate(binary_filtered_list_deepfool):
                 plt.subplot(rows, total_cols, plot_pos)
                 plt.imshow(img[index].permute(1, 2, 0).cpu().numpy())
@@ -717,20 +717,20 @@ def show_defence_example(original, fgsm, pgd, deepfool, bit_reduced_list_fgsm, b
 
 
 # %%
-bit_reduced_images_fgsm = [bit_depth_reduction(adv_images_fgsm, b) for b in bit_levels] if args.attack in ["fgsm", "both"] and args.defense in ["bitdepth", "both"] else []
-binary_filtered_images_fgsm = [binary_filter(adv_images_fgsm, t) for t in thresholds] if args.attack in ["fgsm", "both"] and args.defense in ["binary", "both"] else []
+bit_reduced_images_fgsm = [bit_depth_reduction(adv_images_fgsm, b) for b in bit_levels] if args.attack in ["fgsm", "all"] and args.defense in ["bitdepth", "all"] else []
+binary_filtered_images_fgsm = [binary_filter(adv_images_fgsm, t) for t in thresholds] if args.attack in ["fgsm", "all"] and args.defense in ["binary", "all"] else []
 
-bit_reduced_images_pgd = [bit_depth_reduction(adv_images_pgd, b) for b in bit_levels] if args.attack in ["pgd", "both"] and args.defense in ["bitdepth", "both"] else []
-binary_filtered_images_pgd = [binary_filter(adv_images_pgd, t) for t in thresholds] if args.attack in ["pgd", "both"] and args.defense in ["binary", "both"] else []
+bit_reduced_images_pgd = [bit_depth_reduction(adv_images_pgd, b) for b in bit_levels] if args.attack in ["pgd", "all"] and args.defense in ["bitdepth", "all"] else []
+binary_filtered_images_pgd = [binary_filter(adv_images_pgd, t) for t in thresholds] if args.attack in ["pgd", "all"] and args.defense in ["binary", "all"] else []
 
-bit_reduced_images_deepfool = [bit_depth_reduction(adv_images_deepfool, b) for b in bit_levels] if args.attack in ["deepfool", "both"] and args.defense in ["bitdepth", "both"] else []
-binary_filtered_images_deepfool = [binary_filter(adv_images_deepfool, t) for t in thresholds] if args.attack in ["deepfool", "both"] and args.defense in ["binary", "both"] else []
+bit_reduced_images_deepfool = [bit_depth_reduction(adv_images_deepfool, b) for b in bit_levels] if args.attack in ["deepfool", "all"] and args.defense in ["bitdepth", "all"] else []
+binary_filtered_images_deepfool = [binary_filter(adv_images_deepfool, t) for t in thresholds] if args.attack in ["deepfool", "all"] and args.defense in ["binary", "all"] else []
 
 show_defence_example(
     images,
-    adv_images_fgsm if args.attack in ["fgsm", "both"] else None,
-    adv_images_pgd if args.attack in ["pgd", "both"] else None,
-    adv_images_deepfool if args.attack in ["deepfool", "both"] else None,
+    adv_images_fgsm if args.attack in ["fgsm", "all"] else None,
+    adv_images_pgd if args.attack in ["pgd", "all"] else None,
+    adv_images_deepfool if args.attack in ["deepfool", "all"] else None,
     bit_reduced_images_fgsm,
     binary_filtered_images_fgsm,
     bit_reduced_images_pgd,
@@ -740,3 +740,72 @@ show_defence_example(
     bit_levels,
     thresholds
 )
+
+# %%
+print(f"Clean Accuracy on full val set: {val_acc_clean:.2f}%")
+
+if args.attack in ["fgsm", "all"]:
+    print(f"FGSM Accuracy on full val set : {val_acc_fgsm:.2f}%")
+
+    if args.defense in ["bitdepth", "all"]:
+        best_bit, best_bit_acc = None, 0
+        for b in bit_levels:
+            acc = 100 * bit_results_fgsm[b] / total
+            if acc > best_bit_acc:
+                best_bit_acc = acc
+                best_bit = b
+        print(f"FGSM + Best Bit-Depth Reduction (bits={best_bit}) : {best_bit_acc:.2f}%")
+
+    if args.defense in ["binary", "all"]:
+        best_thresh, best_thresh_acc = None, 0
+        for t in thresholds:
+            acc = 100 * binary_results_fgsm[t] / total
+            if acc > best_thresh_acc:
+                best_thresh_acc = acc
+                best_thresh = t
+        print(f"FGSM + Best Binary Filter (threshold={best_thresh}) : {best_thresh_acc:.2f}%")
+
+if args.attack in ["pgd", "all"]:
+    print(f"PGD Accuracy on full val set  : {val_acc_pgd:.2f}%")
+
+    if args.defense in ["bitdepth", "all"]:
+        best_bit, best_bit_acc = None, 0
+        for b in bit_levels:
+            acc = 100 * bit_results_pgd[b] / total
+            if acc > best_bit_acc:
+                best_bit_acc = acc
+                best_bit = b
+        print(f"PGD + Best Bit-Depth Reduction (bits={best_bit}) : {best_bit_acc:.2f}%")
+
+    if args.defense in ["binary", "all"]:
+        best_thresh, best_thresh_acc = None, 0
+        for t in thresholds:
+            acc = 100 * binary_results_pgd[t] / total
+            if acc > best_thresh_acc:
+                best_thresh_acc = acc
+                best_thresh = t
+        print(f"PGD + Best Binary Filter (threshold={best_thresh}) : {best_thresh_acc:.2f}%")
+
+if args.attack in ["deepfool", "all"]:
+    print(f"DeepFool Accuracy on full val set  : {val_acc_deepfool:.2f}%")
+
+    if args.defense in ["bitdepth", "all"]:
+        best_bit, best_bit_acc = None, 0
+        for b in bit_levels:
+            acc = 100 * bit_results_deepfool[b] / total
+            if acc > best_bit_acc:
+                best_bit_acc = acc
+                best_bit = b
+        print(f"DeepFool + Best Bit-Depth Reduction (bits={best_bit}) : {best_bit_acc:.2f}%")
+
+    if args.defense in ["binary", "all"]:
+        best_thresh, best_thresh_acc = None, 0
+        for t in thresholds:
+            acc = 100 * binary_results_deepfool[t] / total
+            if acc > best_thresh_acc:
+                best_thresh_acc = acc
+                best_thresh = t
+        print(f"DeepFool + Best Binary Filter (threshold={best_thresh}) : {best_thresh_acc:.2f}%")
+
+
+# %%
