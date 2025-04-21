@@ -1,9 +1,29 @@
 import json
+import os
 import subprocess
 from threading import Lock
 from collections import defaultdict
+from hmac_check import generate_hmac
 
 # Command handlers (Whenever we add a new command, add it into the Command registry and provide its proper function along with it)
+
+def cmd_hmac(args=None):
+  """Generates HMAC for given models"""
+  model_path = './models/resnet18_traffic_signs.pth'
+
+  if not os.path.isfile(model_path):
+    return f"Error: File '{model_path}' couldn't be found"
+  
+  try:
+    hmac_value = generate_hmac(model_path)
+    hmac_path = model_path + ".hmac"
+
+    with open(hmac_path, 'w') as f:
+      f.write(hmac_value)
+
+    return f"HMAC generated and saved to {hmac_path}\n\t-HMAC: {hmac_value}"
+  except Exception as e:
+    return f"Error generating HMAC: {str(e)}"
 
 def cmd_logs(args=None):
   """Return logs for the current user"""
@@ -86,5 +106,6 @@ commands = {
   'help': cmd_help,
   'hello': cmd_hello,
   'run_ml': cmd_runAdvML,
-  'logs': cmd_logs
+  'logs': cmd_logs,
+  'hmac': cmd_hmac
 }

@@ -4,7 +4,8 @@ command_permissions = {
   "hello": {"admin", "developer", "user"},
   "help": {"admin", "developer", "user"},
   "logs": {"admin", "developer"},
-  "run_ml": {"admin", "developer", "user"}
+  "run_ml": {"admin", "developer", "user"},
+  "hmac": {"admin"}
 }
 
 with open('./database/user_data.jsonl', 'r') as f:

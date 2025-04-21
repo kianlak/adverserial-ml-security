@@ -11,3 +11,19 @@
 {"timestamp": "2025-04-21 16:37:46", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
 {"timestamp": "2025-04-21 16:41:12", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
 {"timestamp": "2025-04-21 17:04:19", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 17:43:39", "user": "admin", "command": "logs", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 17:44:20", "user": "admin", "command": "hmac", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 17:46:35", "user": "admin", "command": "hmac", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 17:50:09", "user": "admin", "command": "hmac", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 18:08:09", "user": "admin", "command": "hmac", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 18:08:54", "user": "admin", "command": "hmac", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 18:19:59", "user": "admin", "command": "hmac", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 18:20:05", "user": "admin", "command": "run_ml", "status": "denied", "server_response": "Error reading HMAC file: [Errno 2] No such file or directory: 'resnet18_traffic_signs.pth.hmac'"}
+{"timestamp": "2025-04-21 18:20:43", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 18:21:03", "user": "admin", "command": "run_ml", "status": "denied", "server_response": "HMAC check failed."}
+{"timestamp": "2025-04-21 18:21:14", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 18:25:54", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 18:26:05", "user": "admin", "command": "hmac", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 18:26:22", "user": "user", "command": "hmac", "status": "unauthorized", "server_response": "You are not authorized to execute 'hmac'"}
+{"timestamp": "2025-04-21 18:26:43", "user": "dev", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 18:26:49", "user": "dev", "command": "hmac", "status": "unauthorized", "server_response": "You are not authorized to execute 'hmac'"}

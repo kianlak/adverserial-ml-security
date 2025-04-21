@@ -4,6 +4,7 @@ from server_utility import commands
 from auth import authenticate, is_authorized
 from logger import insert_log
 from rate_limiter import check_rate_limited
+from hmac_check import verifying_hmac, generate_hmac
 
 app = Flask(__name__)
 
@@ -60,6 +61,12 @@ def handle_command():
 			msg = "Rate limit exceeded. Please try again later."
 			insert_log(user, command, 'denied', msg)
 			return jsonify({'response': msg}), 429
+		
+		hmac_verified, hmac_msg = verifying_hmac('./models/resnet18_traffic_signs.pth', './models/resnet18_traffic_signs.pth.hmac')
+
+		if not hmac_verified:
+			insert_log(user, command, 'denied', hmac_msg)
+			return jsonify({'response': hmac_msg}), 400
 
 	if command in commands:
 		try:
