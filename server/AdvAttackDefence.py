@@ -18,25 +18,25 @@ sys.stdout.reconfigure(line_buffering=True)
 
 parser = argparse.ArgumentParser(description="Train or Load Model with Attack and Defense Options")
 parser.add_argument("--train", action="store_true", help="Train the model from scratch")
-parser.add_argument("--attack", choices=["fgsm", "pgd", "deepfool", "both", "all"], default="both", help="Select attack type")
-parser.add_argument("--defense", choices=["bitdepth", "binary", "both", "none", "jpeg", "all"], default="both", help="Select defense type")
+parser.add_argument("--attack", choices=["fgsm", "pgd", "deepfool", "both"], default="both", help="Select attack type")
+parser.add_argument("--defense", choices=["bitdepth", "binary", "both", "none", "jpeg"], default="both", help="Select defense type")
 args = parser.parse_args()
 
 # Initialize Attack and Defense Lists
 attacks = [] 
 defense_opts = []
 
-if args.attack in ['all']:
+if args.attack == 'both':
     attacks = ['fgsm', 'pgd', 'deepfool']
 else:
-    attacks = [args.attack] 
+    attacks = [args.attack]
 
-if args.defense in ['all']:
+if args.defense == 'both':
     defense_opts = ['vanilla', 'bitdepth', 'binary', 'jpeg']
 elif args.defense == 'none':
     defense_opts = ['vanilla']
 else:
-    defense_opts = [args.defense] 
+    defense_opts = [args.defense]
 
 # url = f"https://drive.google.com/uc?export=download&id=13NdhIvPgzOQoRg9A-xUUXSsfxVwPrEUV"
 # output_path = "../content/LisaCnn.zip"
@@ -372,15 +372,12 @@ def deepfool_attack(model, image, label):
     model.eval()
     fmodel = fb.PyTorchModel(model, bounds=(0, 1), device=image.device)
     attack = fb.attacks.deepfool.L2DeepFoolAttack()
-    _, clipped, _ = attack(fmodel, image, label, epsilons=None)  # DeepFool attack
+    
+    # Running DeepFool attack
+    _, clipped, _ = attack(fmodel, image, label, epsilons=None)
+    
     return clipped
-def jpeg_compression(img, quality=75):
-    img_pil = transforms.ToPILImage()(img.squeeze().cpu())
-    buf = BytesIO()
-    img_pil.save(buf, format='JPEG', quality=quality)
-    buf.seek(0)
-    comp = Image.open(buf)
-    return transforms.ToTensor()(comp).unsqueeze(0).to(device)
+
 
 
 # %%
@@ -465,10 +462,27 @@ def bit_depth_reduction(img, bits=3):
 def binary_filter(img, threshold=0.5):
   return torch.relu(torch.sign(img - threshold))
 
-correct_clean, correct_fgsm, correct_pgd, correct_deepfool, correct_bit_fgsm, correct_binfilter_fgsm, correct_bit_pgd, correct_binfilter_pgd, correct_bit_deepfool, correct_binfilter_deepfool, total = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+def jpeg_compression(img, quality=75):
+    if img.dim() == 4:
+        img = img[0]
+
+    # Convert the image tensor to PIL format
+    img_pil = transforms.ToPILImage()(img.squeeze().cpu()) 
+    buf = BytesIO()
+    img_pil.save(buf, format='JPEG', quality=quality)
+    buf.seek(0)
+    comp = Image.open(buf)
+    return transforms.ToTensor()(comp).unsqueeze(0).to(device)
+
+correct_clean, correct_fgsm, correct_pgd, correct_deepfool = 0, 0, 0, 0
+correct_bit_fgsm, correct_binfilter_fgsm = 0, 0
+correct_bit_pgd, correct_binfilter_pgd = 0, 0
+correct_bit_deepfool, correct_binfilter_deepfool = 0, 0
+total = 0
 
 thresholds = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
 bit_levels = [1, 2, 3, 4, 5, 6, 7]
+jpeg_qualities = [50, 75, 100]
 
 binary_results_fgsm = {t: 0 for t in thresholds}
 bit_results_fgsm = {b: 0 for b in bit_levels}
@@ -478,6 +492,10 @@ bit_results_pgd = {b: 0 for b in bit_levels}
 
 binary_results_deepfool = {t: 0 for t in thresholds}
 bit_results_deepfool = {b: 0 for b in bit_levels}
+
+jpeg_results_fgsm = {q: 0 for q in jpeg_qualities}
+jpeg_results_pgd = {q: 0 for q in jpeg_qualities}
+jpeg_results_deepfool = {q: 0 for q in jpeg_qualities}
 
 # Iterate over the validation set
 for images, labels in val_loader:
@@ -491,9 +509,15 @@ for images, labels in val_loader:
     # Generate FGSM and PGD adversarial examples
     if args.attack in ["fgsm", "both"]:
         adv_images_fgsm = fgsm_attack(model, images, labels, epsilon)
+        
+        # Apply JPEG compression if defense is selected
+        if args.defense in ["jpeg", "both"]:
+            adv_images_fgsm = jpeg_compression(adv_images_fgsm)  # Apply JPEG compression defense
+
         with torch.no_grad():
             outputs_fgsm = model(adv_images_fgsm)
             _, preds_fgsm = torch.max(outputs_fgsm, 1)
+
         if args.defense in ["bitdepth", "both"]:
             # FGSM + Bit-depth reduction
             for b in bit_levels:
@@ -503,6 +527,7 @@ for images, labels in val_loader:
                     outputs_bit = model(reduced_fgsm_adv_images)
                     _, preds_bit = torch.max(outputs_bit, 1)
                     bit_results_fgsm[b] += (preds_bit == labels).sum().item()
+
         if args.defense in ["binary", "both"]:
             # FGSM + Binary Filter
             for t in thresholds:
@@ -512,13 +537,18 @@ for images, labels in val_loader:
                     outputs_binfilter = model(filtered_fgsm_adv_images)
                     _, preds_binfilter = torch.max(outputs_binfilter, 1)
                     binary_results_fgsm[t] += (preds_binfilter == labels).sum().item()
-    
+
     if args.attack in ["pgd", "both"]:
         adv_images_pgd = pgd_attack(model, images, labels, epsilon, alpha, iterations)
-        # PGD prediction
+        
+        # Apply JPEG compression if defense is selected
+        if args.defense in ["jpeg", "both"]:
+            adv_images_pgd = jpeg_compression(adv_images_pgd)  # Apply JPEG compression defense
+
         with torch.no_grad():
             outputs_pgd = model(adv_images_pgd)
             _, preds_pgd = torch.max(outputs_pgd, 1)
+
         if args.defense in ["bitdepth", "both"]:
             # PGD + Bit-depth reduction
             for b in bit_levels:
@@ -528,6 +558,7 @@ for images, labels in val_loader:
                     outputs_bit = model(reduced_pgd_adv_images)
                     _, preds_bit = torch.max(outputs_bit, 1)
                     bit_results_pgd[b] += (preds_bit == labels).sum().item()
+
         if args.defense in ["binary", "both"]:
             # PGD + Binary Filter
             for t in thresholds:
@@ -540,9 +571,15 @@ for images, labels in val_loader:
 
     if args.attack in ["deepfool", "both"]:
         adv_images_deepfool = deepfool_attack(model, images, labels)
+        
+        # Apply JPEG compression if defense is selected
+        if args.defense in ["jpeg", "both"]:
+            adv_images_deepfool = jpeg_compression(adv_images_deepfool)  # Apply JPEG compression defense
+
         with torch.no_grad():
             outputs_deepfool = model(adv_images_deepfool)
             _, preds_deepfool = torch.max(outputs_deepfool, 1)
+
         if args.defense in ["bitdepth", "both"]:
             # DeepFool + Bit-depth reduction
             for b in bit_levels:
@@ -552,6 +589,7 @@ for images, labels in val_loader:
                     outputs_bit = model(reduced_deepfool_adv_images)
                     _, preds_bit = torch.max(outputs_bit, 1)
                     bit_results_deepfool[b] += (preds_bit == labels).sum().item()
+
         if args.defense in ["binary", "both"]:
             # DeepFool + Binary Filter
             for t in thresholds:
@@ -566,6 +604,7 @@ for images, labels in val_loader:
     total += labels.size(0)
     correct_clean += (preds_clean == labels).sum().item()
     val_acc_clean = 100 * correct_clean / total
+
     if args.attack in ["fgsm", "both"]:
         correct_fgsm += (preds_fgsm == labels).sum().item()
         val_acc_fgsm = 100 * correct_fgsm / total
@@ -578,6 +617,7 @@ for images, labels in val_loader:
         correct_deepfool += (preds_deepfool == labels).sum().item()
         val_acc_deepfool = 100 * correct_deepfool / total
 
+# Print Results
 print(f"Clean Accuracy on full val set: {val_acc_clean:.2f}%")
 
 if args.attack in ["fgsm", "both"]:
@@ -590,6 +630,8 @@ if args.attack in ["fgsm", "both"]:
         for t in thresholds:
             binary_fgsm_acc = 100 * binary_results_fgsm[t] / total
             print(f"FGSM + Binary Filter (threshold={t}) : {binary_fgsm_acc:.2f}%")
+    if args.defense in ["jpeg", "both"]:
+        print(f"FGSM + JPEG Compression Defense Accuracy: {100 * correct_fgsm / total:.2f}%")
 
 if args.attack in ["pgd", "both"]:
     print(f"PGD Accuracy on full val set  : {val_acc_pgd:.2f}%")
@@ -601,6 +643,8 @@ if args.attack in ["pgd", "both"]:
         for t in thresholds:
             binary_pgd_acc = 100 * binary_results_pgd[t] / total
             print(f"PGD + Binary Filter (threshold={t}) : {binary_pgd_acc:.2f}%")
+    if args.defense in ["jpeg", "both"]:
+        print(f"PGD + JPEG Compression Defense Accuracy: {100 * correct_pgd / total:.2f}%")
 
 if args.attack in ["deepfool", "both"]:
     print(f"DeepFool Accuracy on full val set  : {val_acc_deepfool:.2f}%")
@@ -612,6 +656,9 @@ if args.attack in ["deepfool", "both"]:
         for t in thresholds:
             binary_deepfool_acc = 100 * binary_results_deepfool[t] / total
             print(f"DeepFool + Binary Filter (threshold={t}) : {binary_deepfool_acc:.2f}%")
+    if args.defense in ["jpeg", "both"]:
+        print(f"DeepFool + JPEG Compression Defense Accuracy: {100 * correct_deepfool / total:.2f}%")
+
 
 
 
