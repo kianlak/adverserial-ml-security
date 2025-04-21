@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify, Response, stream_with_context
 from server_utility import commands
 from auth import authenticate, is_authorized
 from logger import insert_log
+from rate_limiter import check_rate_limited
 
 app = Flask(__name__)
 
@@ -53,6 +54,13 @@ def handle_command():
   
 	user = data.get('user', '')
 	print(f"[+] Received user: {user}")
+
+	if command == 'help':
+		if check_rate_limited(user):
+			msg = "Rate limit exceeded. Please try again later."
+			insert_log(user, command, 'denied', msg)
+			return jsonify({'response': msg}), 429
+
 	if command in commands:
 		try:
 
