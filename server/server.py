@@ -55,7 +55,7 @@ def handle_command():
 	user = data.get('user', '')
 	print(f"[+] Received user: {user}")
 
-	if command == 'help':
+	if command == 'run_ml':
 		if check_rate_limited(user):
 			msg = "Rate limit exceeded. Please try again later."
 			insert_log(user, command, 'denied', msg)
