@@ -353,7 +353,7 @@ def pgd_attack(model, image, label, epsilon, alpha, iterations):
     image_adv = image.clone().detach().requires_grad_(True)  
     original_image = image.clone().detach() 
     for _ in range(iterations):
-        
+        image_adv.requires_grad_(True)
         output = model(image_adv)
         
         loss = F.cross_entropy(output, label)
@@ -371,23 +371,24 @@ def pgd_attack(model, image, label, epsilon, alpha, iterations):
     return image_adv.detach()  
 
 # DeepFool Attack Function 
-def deepfool_attack(model, image, label, epsilons=1e-4):  # Default epsilon value for perturbation magnitude
+def deepfool_attack(model, image, label, epsilons=2e-2):  # Default epsilon value for perturbation magnitude
     model.eval() 
     
     fmodel = fb.PyTorchModel(model, bounds=(0, 1), device=image.device)
     
     attack = fb.attacks.deepfool.L2DeepFoolAttack()
     
-    adv_image, _, _ = attack(fmodel, image, label, epsilons=epsilons) 
-    return adv_image
+    adv_image, _, is_adv = attack(fmodel, image, label, epsilons=epsilons)
+    
+    return adv_image.detach() 
 
 
 
 # %%
 # PGD Attack Parameters
 epsilon = 12 / 255  # Increased perturbation magnitude
-alpha = 6 / 255     # Increased step size for PGD attack
-iterations = 50    # Number of iterations for PGD attack
+alpha = 3 / 255     # Increased step size for PGD attack
+iterations = 12    # Number of iterations for PGD attack
 
 # Example: Get one image and label from your validation set
 images, labels = next(iter(val_loader))
@@ -400,36 +401,46 @@ adv_image_fgsm = fgsm_attack(model, image, label, epsilon)  # Ensure FGSM is com
 # Compute PGD adversarial images
 adv_image_pgd = pgd_attack(model, image, label, epsilon, alpha, iterations)  # PGD computation
 
+adv_image_deepfool = deepfool_attack(model, image, label)
+
 # Get predictions for original image, FGSM, and PGD adversarial image
 model.eval()  # Set model to evaluation mode for inference
 with torch.no_grad():
     pred_clean = model(image).argmax(dim=1).item()
     pred_fgsm = model(adv_image_fgsm).argmax(dim=1).item()  # Use adv_image_fgsm
     pred_pgd = model(adv_image_pgd).argmax(dim=1).item()  # Use adv_image_pgd
+    pred_deepfool = model(adv_image_deepfool).argmax(dim=1).item()
 
 # Visualize the original, FGSM, and PGD adversarial images
 image_vis = image.squeeze().detach().cpu()
 adv_vis_fgsm = adv_image_fgsm.squeeze().detach().cpu()
 adv_vis_pgd = adv_image_pgd.squeeze().detach().cpu()
+adv_vis_deepfool = adv_image_deepfool.squeeze().detach().cpu()
 
-plt.figure(figsize=(12, 8))
+plt.figure(figsize=(16, 8))
 
 # Original Image
-plt.subplot(1, 3, 1)
+plt.subplot(1, 4, 1)
 plt.imshow(image_vis.permute(1, 2, 0).numpy())
 plt.title(f"Original Label: {label.item()} | Pred: {pred_clean}")
 plt.axis('off')
 
 # FGSM Adversarial Image
-plt.subplot(1, 3, 2)
+plt.subplot(1, 4, 2)
 plt.imshow(adv_vis_fgsm.permute(1, 2, 0).numpy())
 plt.title(f"FGSM Label: {label.item()} | Pred: {pred_fgsm}")
 plt.axis('off')
 
 # PGD Adversarial Image
-plt.subplot(1, 3, 3)
+plt.subplot(1, 4, 3)
 plt.imshow(adv_vis_pgd.permute(1, 2, 0).numpy())
 plt.title(f"PGD Label: {label.item()} | Pred: {pred_pgd}")
+plt.axis('off')
+
+# Deepfool Adversarial Image
+plt.subplot(1, 4, 4)
+plt.imshow(adv_vis_deepfool.permute(1, 2, 0).numpy())
+plt.title(f"Deepfool Label: {label.item()} | Pred: {pred_deepfool}")
 plt.axis('off')
 
 plt.tight_layout()
@@ -438,20 +449,26 @@ plt.show()
 # Visualize the difference between original and adversarial images
 diff_fgsm = (adv_image_fgsm - image).squeeze().detach().cpu()
 diff_pgd = (adv_image_pgd - image).squeeze().detach().cpu()
+diff_deepfool = (adv_image_deepfool - image).squeeze().detach().cpu()
 
 # Plot the differences
-plt.figure(figsize=(12, 8))
+plt.figure(figsize=(16, 8))
 
 # Difference between Original and FGSM
-plt.subplot(1, 2, 1)
+plt.subplot(1, 3, 1)
 plt.imshow(diff_fgsm.permute(1, 2, 0).numpy())
 plt.title("Difference: FGSM")
 plt.axis('off')
 
 # Difference between Original and PGD
-plt.subplot(1, 2, 2)
+plt.subplot(1, 3, 2)
 plt.imshow(diff_pgd.permute(1, 2, 0).numpy())
 plt.title("Difference: PGD")
+plt.axis('off')
+
+plt.subplot(1, 3, 3)
+plt.imshow(diff_deepfool.permute(1, 2, 0).numpy())
+plt.title("Difference: Deepfool")
 plt.axis('off')
 
 plt.tight_layout()
@@ -465,22 +482,40 @@ def bit_depth_reduction(img, bits=3):
 def binary_filter(img, threshold=0.5):
   return torch.relu(torch.sign(img - threshold))
 
-def jpeg_compression(img, quality=75):
+def jpeg_compression(imgs, quality=75):
     # Check if the input image is in the correct shape
-    if img.ndimension() == 4:  # If the image has 4 dimensions (batch_size, channels, height, width)
-        img = img[0]  # Select the first image from the batch
+    # if img.ndimension() == 4:  # If the image has 4 dimensions (batch_size, channels, height, width)
+    #     img = img[0]  # Select the first image from the batch
 
-    # Convert the selected image to a PIL Image
-    img_pil = transforms.ToPILImage()(img.cpu())
+    # img = torch.clamp(img, 0, 1)
+
+    # # Convert the selected image to a PIL Image
+    # img_pil = transforms.ToPILImage()(img.cpu())
     
-    # Apply JPEG compression
-    buf = BytesIO()
-    img_pil.save(buf, format='JPEG', quality=quality)
-    buf.seek(0)
-    comp = Image.open(buf)
+    # # Apply JPEG compression
+    # buf = BytesIO()
+    # img_pil.save(buf, format='JPEG', quality=quality)
+    # buf.seek(0)
+    # comp = Image.open(buf).convert('RGB')
     
-    # Return the compressed image as a tensor
-    return transforms.ToTensor()(comp).unsqueeze(0).to(device)
+    # # Return the compressed image as a tensor
+    # return transforms.ToTensor()(comp).unsqueeze(0).to(img.device)
+
+    compressed_imgs = []
+
+    for img in imgs:
+        img = torch.clamp(img, 0, 1)
+        img_pil = transforms.ToPILImage()(img.cpu())
+
+        buf = BytesIO()
+        img_pil.save(buf, format='JPEG', quality=quality)
+        buf.seek(0)
+        comp = Image.open(buf).convert('RGB')
+
+        img_tensor = transforms.ToTensor()(comp).to(img.device)
+        compressed_imgs.append(img_tensor)
+
+    return torch.stack(compressed_imgs)
 
 
 correct_clean, correct_fgsm, correct_pgd, correct_deepfool, correct_bit_fgsm, correct_binfilter_fgsm, correct_bit_pgd, correct_binfilter_pgd, correct_bit_deepfool, correct_binfilter_deepfool, total = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
@@ -582,11 +617,10 @@ for images, labels in val_loader:
                     jpeg_results_pgd[q] += (preds_jpeg == labels).sum().item()
 
     if args.attack in ["deepfool", "all"]:
-        adv_images_deepfool = deepfool_attack(model, images, labels, epsilons=1e-1)
+        adv_images_deepfool = deepfool_attack(model, images, labels)
         with torch.no_grad():
             outputs_deepfool = model(adv_images_deepfool)
             _, preds_deepfool = torch.max(outputs_deepfool, 1)
-
         correct_deepfool += (preds_deepfool == labels).sum().item()
 
         # Apply defenses (bit-depth reduction, binary filter, JPEG)
@@ -690,34 +724,34 @@ if args.attack in ["deepfool", "all"]:
 
 # %%
 import matplotlib.pyplot as plt
-def visualize_attack(image, adv_image, attack_name="DeepFool"):
-    # Convert to numpy and plot images
-    image = image.squeeze().detach().cpu().numpy().transpose(1, 2, 0)
-    adv_image = adv_image.squeeze().detach().cpu().numpy().transpose(1, 2, 0)
+# def visualize_attack(image, adv_image, attack_name="DeepFool"):
+#     # Convert to numpy and plot images
+#     image = image.squeeze().detach().cpu().numpy().transpose(1, 2, 0)
+#     adv_image = adv_image.squeeze().detach().cpu().numpy().transpose(1, 2, 0)
     
-    plt.figure(figsize=(12, 6))
+#     plt.figure(figsize=(12, 6))
     
-    plt.subplot(1, 2, 1)
-    plt.imshow(image)
-    plt.title(f"Original Image")
-    plt.axis('off')
+#     plt.subplot(1, 2, 1)
+#     plt.imshow(image)
+#     plt.title(f"Original Image")
+#     plt.axis('off')
     
-    plt.subplot(1, 2, 2)
-    plt.imshow(adv_image)
-    plt.title(f"{attack_name} Adversarial Image")
-    plt.axis('off')
+#     plt.subplot(1, 2, 2)
+#     plt.imshow(adv_image)
+#     plt.title(f"{attack_name} Adversarial Image")
+#     plt.axis('off')
     
-    plt.show()
+#     plt.show()
 
-# Visualize a sample clean image and its DeepFool adversarial example
-image_sample = images[0].unsqueeze(0).to(device)
-label_sample = labels[0].unsqueeze(0).to(device)
+# # Visualize a sample clean image and its DeepFool adversarial example
+# image_sample = images[0].unsqueeze(0).to(device)
+# label_sample = labels[0].unsqueeze(0).to(device)
 
-# Perform DeepFool attack on the sample
-adv_image_deepfool = deepfool_attack(model, image_sample, label_sample, epsilons=1e-2)  # Increase epsilon here
+# # Perform DeepFool attack on the sample
+# adv_image_deepfool = deepfool_attack(model, image_sample, label_sample) 
 
-# Visualize
-visualize_attack(image_sample, adv_image_deepfool, attack_name="DeepFool")
+# # Visualize
+# visualize_attack(image_sample, adv_image_deepfool, attack_name="DeepFool")
 
 def show_defence_example(original, fgsm, pgd, deepfool, 
                           bit_reduced_list_fgsm, binary_filtered_list_fgsm, 
