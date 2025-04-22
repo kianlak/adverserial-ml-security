@@ -53,9 +53,10 @@ In the client terminal, run:
 ## Notes
 
 - Ensure the virtual environment (`venv`) is already created.
-- Install dependencies with:
+- Install dependencies with when venv is activated:
   pip install -r requirements.txt
 - The server must be running before starting the client.
 - Mainly tested on Windows with Python 3.13.x
+- On the first run, make sure to login to admin and run hmac to ensure a hashed hmac value for the model, after that you can use any user role
 
 ---
