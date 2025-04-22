@@ -27,3 +27,20 @@
 {"timestamp": "2025-04-21 18:26:22", "user": "user", "command": "hmac", "status": "unauthorized", "server_response": "You are not authorized to execute 'hmac'"}
 {"timestamp": "2025-04-21 18:26:43", "user": "dev", "command": "run_ml", "status": "authorized", "server_response": ""}
 {"timestamp": "2025-04-21 18:26:49", "user": "dev", "command": "hmac", "status": "unauthorized", "server_response": "You are not authorized to execute 'hmac'"}
+{"timestamp": "2025-04-21 19:06:26", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 19:07:27", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 19:09:36", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 19:14:34", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 19:22:12", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 19:31:02", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 19:39:07", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 19:42:58", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 19:47:35", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 19:52:09", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 19:53:04", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 20:04:38", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 20:05:38", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 20:07:12", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 20:08:31", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 20:14:09", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-21 20:21:13", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
