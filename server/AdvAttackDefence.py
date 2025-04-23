@@ -322,6 +322,157 @@ else:
     else:
         raise FileNotFoundError("Model not found. Use --train to train it first.")
 
+
+# %%
+
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+
+# Encrypt Model via AES+RSA encryption protocol.
+# Basic idea is to encrypt model with AES (fast, but symmetric protocol).
+# Use RSA (slower, but asymmetric) to send over the AES keys.
+def encrypt_model(model_path, encr_model_path, priv_RSA_path, publ_RSA_path, AES_path):
+    # Load PyTorch model file (can skip if model was generated in this instance)
+    with open(model_path, "rb") as f:
+        model_data = f.read()
+
+    # Generate AES-256 key and nonce
+    aes_key = AESGCM.generate_key(bit_length=256)
+    nonce = os.urandom(12)  # 12 bytes, recommended size to be considered secure
+    aesgcm = AESGCM(aes_key)
+    
+    # Encrypt model
+    ciphertext = aesgcm.encrypt(nonce, model_data, associated_data=None)
+    
+    # Save the encrypted file
+    with open(encr_model_path, "wb") as f:
+        f.write(nonce + ciphertext)
+
+
+   
+            
+    # Load reciever's public RSA key
+    with open(publ_RSA_path, "rb") as f:
+        public_key = serialization.load_pem_public_key(f.read())
+            
+    # Encrypt AES key using RSA-OAEP
+    encrypted_key = public_key.encrypt(
+        aes_key,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+            
+    # Save the encrypted AES key
+    with open(AES_path, "wb") as f:
+        f.write(encrypted_key)
+                
+           
+# %%
+'''
+Requirements needed running just decryption on separate machine:
+import torch
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+'''
+
+# Decrypt model via RSA keys to get AES keys to decrypt model. 
+# Save model locally & return model as variable.
+def decrypt_model(RSA_key_path, AES_key_path, encr_model_path, model_path):
+    # Load Receiver's private key
+    with open(RSA_key_path, "rb") as f:
+        private_key = serialization.load_pem_private_key(
+            f.read(),
+            password=None # optional additional password
+    )
+
+    # Decrypt AES key
+    with open(AES_key_path, "rb") as f:
+        encrypted_aes_key = f.read()
+        
+    aes_key = private_key.decrypt(
+        encrypted_aes_key,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+
+    # Decrypt the model via AES-GCM
+    with open(encr_model_path, "rb") as f:
+        data = f.read()
+        nonce = data[:12]
+        ciphertext = data[12:]
+
+    aesgcm = AESGCM(aes_key)
+    decrypted_model_data = aesgcm.decrypt(nonce, ciphertext, associated_data=None)
+
+    # Save and load the decrypted .pth model
+    with open(model_path, "wb") as f:
+        f.write(decrypted_model_data)
+        
+    # Save model locally
+    # Model saved via state_dict, need to convert to relevant structure
+    model_decr = CustomResNet()
+    state_dict = torch.load(model_path)
+    model_decr.load_state_dict(state_dict)
+    model_decr.eval()
+    
+    return model_decr
+
+
+# %%
+# Function calling to actually encrypt/decrypt model.
+# Encrypt model
+priv_RSA_path = "models/receiver_RSA_private.pem"
+publ_RSA_path = "models/receiver_RSA_public.pem"
+# Generate receiver's RSA info (need public key). should only be done on receiver's side.
+print("Setting up receiver's RSA keys")
+# Generate RSA private key
+private_key = rsa.generate_private_key(
+    # commonly used exp, has cool math properties b/c prime & large
+    public_exponent=65537,  
+    # min size for RSA, could increase to 4096 if extra security needed.
+    key_size=2048,
+    backend=default_backend()
+)
+
+# Save private key to PEM file
+with open(priv_RSA_path, "wb") as f:
+    f.write(private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption()
+    ))
+    
+# Save the public key
+public_key = private_key.public_key()
+with open(publ_RSA_path, "wb") as f:
+    f.write(public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    ))
+encr_model_path = "models/encr_resnet18_traffic_signs.bin"
+AES_path = "models/AES_keys.bin"
+
+# Encrypts and saves model via AES. Encrypts AES keys via RSA. Saved locally.
+encrypt_model(model_path, encr_model_path, priv_RSA_path, publ_RSA_path, AES_path)
+print(f"Model encrypted and saved at: {encr_model_path}")
+print(f"Encrypted AES keys saved at: {AES_path}")
+
+# Decrypt model
+# decrypts AES keys via RSA. Model via AES keys. saves model locally & as variable.
+decr_model = decrypt_model(priv_RSA_path, AES_path, encr_model_path, "models/decr_resnet18_traffic_signs.pth")
+
+print("Decrypted model and saved locally at: models/decr_resnet18_traffic_signs.pth")
+
 # %%
 import torch
 import torch.nn.functional as F
