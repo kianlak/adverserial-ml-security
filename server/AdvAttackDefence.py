@@ -681,12 +681,16 @@ bit_results_fgsm = {b: 0 for b in bit_levels}
 binary_results_pgd = {t: 0 for t in thresholds}
 bit_results_pgd = {b: 0 for b in bit_levels}
 
+binary_results_clean = {t: 0 for t in thresholds}
+bit_results_clean = {b: 0 for b in bit_levels}
+
 binary_results_deepfool = {t: 0 for t in thresholds}
 bit_results_deepfool = {b: 0 for b in bit_levels}
 
 jpeg_results_fgsm = {q: 0 for q in jpeg_qualities}
 jpeg_results_pgd = {q: 0 for q in jpeg_qualities}
 jpeg_results_deepfool = {q: 0 for q in jpeg_qualities}
+jpeg_results_clean = {q: 0 for q in jpeg_qualities}
 
 # Iterate over the validation set
 for images, labels in val_loader:
@@ -698,6 +702,31 @@ for images, labels in val_loader:
         _, preds_clean = torch.max(outputs_clean, 1)
     
     correct_clean += (preds_clean == labels).sum().item()
+
+    if args.defense in ["bitdepth", "all"]:
+        for b in bit_levels:
+            reduced_fgsm_adv_images = bit_depth_reduction(images, b)
+            with torch.no_grad():
+                outputs_bit = model(reduced_fgsm_adv_images)
+                _, preds_bit = torch.max(outputs_bit, 1)
+                bit_results_clean[b] += (preds_bit == labels).sum().item()
+
+    if args.defense in ["binary", "all"]:
+        for t in thresholds:
+            filtered_fgsm_adv_images = binary_filter(images, t)
+            with torch.no_grad():
+                outputs_binfilter = model(filtered_fgsm_adv_images)
+                _, preds_binfilter = torch.max(outputs_binfilter, 1)
+                binary_results_clean[t] += (preds_binfilter == labels).sum().item()
+
+            # Apply JPEG compression defense
+    if args.defense in ["jpeg", "all"]:
+        for q in jpeg_qualities:
+            jpeg_fgsm_adv_images = jpeg_compression(images, quality=q)
+            with torch.no_grad():
+                outputs_jpeg = model(jpeg_fgsm_adv_images)
+                _, preds_jpeg = torch.max(outputs_jpeg, 1)
+                jpeg_results_clean[q] += (preds_jpeg == labels).sum().item()
 
     # Generate FGSM and PGD adversarial examples
     if args.attack in ["fgsm", "all"]:
@@ -809,6 +838,24 @@ val_acc_pgd = 100 * correct_pgd / total
 val_acc_deepfool = 100 * correct_deepfool / total
 
 print(f"Clean Accuracy on full val set: {val_acc_clean:.2f}%")
+
+# Results for bit-depth reduction defense
+if args.defense in ["bitdepth", "all"]:
+    for b in bit_levels:
+        bit_clean_acc = 100 * bit_results_clean[b] / total
+        print(f"clean + Bit-Depth Reduction (bits={b}) : {bit_clean_acc:.2f}%")
+    
+    # Results for binary filter defense
+if args.defense in ["binary", "all"]:
+    for t in thresholds:
+        binary_clean_acc = 100 * binary_results_clean[t] / total
+        print(f"clean + Binary Filter (threshold={t}) : {binary_clean_acc:.2f}%")
+    
+    # Results for JPEG compression defense
+if args.defense in ["jpeg", "all"]:
+    for q in jpeg_qualities:
+        jpeg_clean_acc = 100 * jpeg_results_clean[q] / total
+        print(f"clean + JPEG Compression (quality={q}) : {jpeg_clean_acc:.2f}%")
 
 if args.attack in ["fgsm", "all"]:
     print(f"FGSM Accuracy on full val set: {val_acc_fgsm:.2f}%")
@@ -1074,6 +1121,35 @@ show_defence_example(
 
 # %%
 print(f"Clean Accuracy on full val set: {val_acc_clean:.2f}%")
+    # Best Bit-Depth Reduction
+if args.defense in ["bitdepth", "all"]:
+    best_bit, best_bit_acc = None, 0
+    for b in bit_levels:
+        acc = 100 * bit_results_clean[b] / total
+        if acc > best_bit_acc:
+            best_bit_acc = acc
+            best_bit = b
+    print(f"clean + Best Bit-Depth Reduction (bits={best_bit}) : {best_bit_acc:.2f}%")
+
+    # Best Binary Filter
+if args.defense in ["binary", "all"]:
+    best_thresh, best_thresh_acc = None, 0
+    for t in thresholds:
+        acc = 100 * binary_results_clean[t] / total
+        if acc > best_thresh_acc:
+            best_thresh_acc = acc
+            best_thresh = t
+    print(f"clean + Best Binary Filter (threshold={best_thresh}) : {best_thresh_acc:.2f}%")
+
+    # Best JPEG Compression
+if args.defense in ["jpeg", "all"]:
+    best_jpeg, best_jpeg_acc = None, 0
+    for q in jpeg_qualities:
+        acc = 100 * jpeg_results_clean[q] / total
+        if acc > best_jpeg_acc:
+            best_jpeg_acc = acc
+            best_jpeg = q
+    print(f"clean + Best JPEG Compression (quality={best_jpeg}) : {best_jpeg_acc:.2f}%")
 
 if args.attack in ["fgsm", "all"]:
     print(f"FGSM Accuracy on full val set: {val_acc_fgsm:.2f}%")
