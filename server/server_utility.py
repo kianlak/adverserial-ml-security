@@ -78,9 +78,9 @@ def cmd_hello(args=None):
 
 def cmd_runAdvML(args=None):
     """runs AdvAttackDefence.py 
-       run_ml [--train] [--attack {fgsm, pgd, deepfool, all}] [--defense {bitdepth, binary, jpeg, none, all}]
-
-          --train	(Optional) If set, the script trains a new model. Otherwise, it loads a pre-trained model.
+       run_ml [--model {base, adv_trained}] [--train] [--attack {fgsm, pgd, deepfool, all}] [--defense {bitdepth, binary, jpeg, none, all}]
+          --model	(Optional) Choose model type. Options: base, or adv_trained. Default is the base model.
+          --train	(Optional) If set, the script trains a new base model. Otherwise, it loads a pre-trained model.
           --attack	(Optional) Choose attack method. Options: fgsm, pgd, deepfool, or all. Default is all.
           --defense	(Optional) Choose defense technique. Options: bitdepth, binary, jpeg, none, or all. Default is all.
 """

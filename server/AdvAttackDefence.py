@@ -17,7 +17,8 @@ import foolbox as fb
 sys.stdout.reconfigure(line_buffering=True)
 
 parser = argparse.ArgumentParser(description="Train or Load Model with Attack and Defense Options")
-parser.add_argument("--train", action="store_true", help="Train the model from scratch")
+parser.add_argument("--model", choices=["base", "adv_trained"], default="base", help="Select which model to run")
+parser.add_argument("--train", action="store_true", help="Train the base model from scratch")
 parser.add_argument("--attack", choices=["fgsm", "pgd", "deepfool", "all"], default="all", help="Select attack type")
 parser.add_argument("--defense", choices=["bitdepth", "binary", "none", "jpeg", "all"], default="all", help="Select defense type")
 args = parser.parse_args()
@@ -252,7 +253,12 @@ model = CustomResNet(num_classes=3).to(device)
 
 # %%
 # 9. Define Loss & Optimizer"""
-model_path = "models/resnet18_traffic_signs.pth"
+if args.model == "base":
+    model_path = "models/resnet18_traffic_signs.pth"
+    print("***Base model is being used***")
+elif args.model == "adv_trained":
+    model_path = "models/resnet18_adversarial_trained.pth"
+    print("***Adversarial trained model is being used***")
 
 if args.train:
     print("Training model...")
