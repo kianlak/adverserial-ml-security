@@ -58,5 +58,6 @@ In the client terminal, run:
 - The server must be running before starting the client.
 - Mainly tested on Windows with Python 3.13.x
 - On the first run, make sure to login to admin and run hmac to ensure a hashed hmac value for the model, after that you can use any user role
+- admin login is Username: admin Password: pass
 
 ---
