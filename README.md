@@ -36,7 +36,7 @@ Use the appropriate command based on your operating system:
 
 In the server terminal, run:
 
-  cd server
+  cd server <br>
   python server.py
 
 ---
@@ -45,7 +45,7 @@ In the server terminal, run:
 
 In the client terminal, run:
 
-  cd client
+  cd client <br>
   python client.py
 
 ---
@@ -61,3 +61,15 @@ In the client terminal, run:
 - admin login is Username: admin Password: pass
 
 ---
+
+## Client Available commands:
+ - help: Showcases useful commands
+ - hello: Say hello to the server, what will it respond with???
+ - run_ml: runs AdvAttackDefence.py <br>
+   run_ml [--model {base, adv_trained}] [--train] [--attack {fgsm, pgd, deepfool, all}] [--defense {bitdepth, binary, jpeg, none, all}] <br>
+     --model       (Optional) Choose model type. Options: base, or adv_trained. Default is the base model.<br>
+     --train       (Optional) If set, the script trains a new base model. Otherwise, it loads a pre-trained model.<br>
+     --attack      (Optional) Choose attack method. Options: fgsm, pgd, deepfool, or all. Default is all.<br>
+     --defense     (Optional) Choose defense technique. Options: bitdepth, binary, jpeg, none, or all. Default is all.
+ - logs: Return logs for the current user
+ - hmac: Generates HMAC for given models
