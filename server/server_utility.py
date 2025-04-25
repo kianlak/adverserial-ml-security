@@ -10,9 +10,13 @@ from hmac_check import generate_hmac
 def cmd_hmac(args=None):
   """Generates HMAC for given models"""
   model_path = './models/resnet18_traffic_signs.pth'
+  adv_trained_model_path = './models/resnet18_adversarial_trained.pth'
 
   if not os.path.isfile(model_path):
     return f"Error: File '{model_path}' couldn't be found"
+  
+  if not os.path.isfile(adv_trained_model_path):
+    return f"Error: File '{adv_trained_model_path}' couldn't be found"
   
   try:
     hmac_value = generate_hmac(model_path)
@@ -21,7 +25,13 @@ def cmd_hmac(args=None):
     with open(hmac_path, 'w') as f:
       f.write(hmac_value)
 
-    return f"HMAC generated and saved to {hmac_path}\n\t-HMAC: {hmac_value}"
+    hmac_value = generate_hmac(adv_trained_model_path)
+    hmac_path = adv_trained_model_path + ".hmac"
+
+    with open(hmac_path, 'w') as f:
+      f.write(hmac_value)
+
+    return f"HMAC generated"
   except Exception as e:
     return f"Error generating HMAC: {str(e)}"
 

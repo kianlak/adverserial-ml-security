@@ -63,6 +63,7 @@ def handle_command():
 			return jsonify({'response': msg}), 429
 		
 		hmac_verified, hmac_msg = verifying_hmac('./models/resnet18_traffic_signs.pth', './models/resnet18_traffic_signs.pth.hmac')
+		hmac_verified, hmac_msg = verifying_hmac('./models/resnet18_adversarial_trained.pth', './models/resnet18_adversarial_trained.pth.hmac')
 
 		if not hmac_verified:
 			insert_log(user, command, 'denied', hmac_msg)
