@@ -7,6 +7,7 @@
 ⚠️ Important: You will need **two terminal windows** — one for the **server** and one for the **client**.  
 Activate the virtual environment in **both** terminals.
 
+- Ensure the virtual environment (`venv`) is already created and activated before running `pip install -r requirements.txt`
 ## Dependencies and Requirements
 
 Make sure to run (in the root directory):
@@ -52,7 +53,6 @@ In the client terminal, run:
 
 ## Notes
 
-- Ensure the virtual environment (`venv`) is already created.
 - Install dependencies with when venv is activated:
   pip install -r requirements.txt
 - The server must be running before starting the client.
