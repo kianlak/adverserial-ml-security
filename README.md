@@ -8,6 +8,7 @@
 Activate the virtual environment in **both** terminals.
 
 - Ensure the virtual environment (`venv`) is already created and activated before running `pip install -r requirements.txt`
+
 ## Dependencies and Requirements
 
 Make sure to run (in the root directory):
@@ -59,6 +60,7 @@ In the client terminal, run:
 - Mainly tested on Windows with Python 3.13.x
 - On the first run, make sure to login to admin and run hmac to ensure a hashed hmac value for the model, after that you can use any user role
 - admin login is Username: admin Password: pass
+- Make sure that you don't have several aliases for python on your machine, otherwise the virtual environment won't know which PATH to use when running certain files (namely AdvAttackDefence.py)
 
 ---
 

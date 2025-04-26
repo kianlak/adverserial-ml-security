@@ -47,3 +47,10 @@
 {"timestamp": "2025-04-25 16:34:16", "user": "admin", "command": "hmac", "status": "authorized", "server_response": ""}
 {"timestamp": "2025-04-25 16:34:49", "user": "admin", "command": "hmac", "status": "authorized", "server_response": ""}
 {"timestamp": "2025-04-25 16:34:59", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-25 19:55:55", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-25 19:57:20", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-25 19:57:54", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-25 20:02:41", "user": "admin", "command": "hmac", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-25 20:02:45", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-25 20:03:50", "user": "admin", "command": "help", "status": "authorized", "server_response": ""}
+{"timestamp": "2025-04-25 20:05:49", "user": "admin", "command": "run_ml", "status": "authorized", "server_response": ""}
